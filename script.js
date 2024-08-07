@@ -138,25 +138,25 @@ function handleEmbedding(imdbId) {
             let embedUrl;
             let type = button.dataset.type;
 
-            if (type === 'series') {
-                const season = document.querySelector('#season-number').value;
-                const episode = document.querySelector('#episode-number').value;
-                if (button.classList.contains('superembed-btn')) {
-                    embedUrl = `https://multiembed.mov/?video_id=${imdbId}&s=${season}&e=${episode}`;
-                } else if (button.classList.contains('autoembed-btn')) {
-                    embedUrl = `https://autoembed.co/tv/imdb/${imdbId}-${season}-${episode}`;
-                } else if (button.classList.contains('vidsrc-btn')) {
-                    embedUrl = `https://vidsrc.xyz/embed/tv?imdb=${imdbId}&season=${season}&episode=${episode}`;
-                }
-            } else {
-                if (button.classList.contains('superembed-btn')) {
-                    embedUrl = `https://multiembed.mov/?video_id=${imdbId}`;
-                } else if (button.classList.contains('autoembed-btn')) {
-                    embedUrl = `https://autoembed.co/movie/imdb/${imdbId}`;
-                } else if (button.classList.contains('vidsrc-btn')) {
-                    embedUrl = `https://vidsrc.com/embed/imdb/${imdbId}`;
-                }
-            }
+if (type === 'series') {
+    const season = document.querySelector('#season-number').value;
+    const episode = document.querySelector('#episode-number').value;
+    if (button.classList.contains('superembed-btn')) {
+        embedUrl = `https://parasgaming122.github.io/project-s/https://multiembed.mov/?video_id=${imdbId}&s=${season}&e=${episode}`;
+    } else if (button.classList.contains('autoembed-btn')) {
+        embedUrl = `https://parasgaming122.github.io/project-s/https://autoembed.co/tv/imdb/${imdbId}-${season}-${episode}`;
+    } else if (button.classList.contains('vidsrc-btn')) {
+        embedUrl = `https://parasgaming122.github.io/project-s//https://vidsrc.xyz/embed/tv?imdb=${imdbId}&season=${season}&episode=${episode}`;
+    }
+} else {
+    if (button.classList.contains('superembed-btn')) {
+        embedUrl = `https://parasgaming122.github.io/project-s/https://multiembed.mov/?video_id=${imdbId}`;
+    } else if (button.classList.contains('autoembed-btn')) {
+        embedUrl = `https://parasgaming122.github.io/project-s/https://autoembed.co/movie/imdb/${imdbId}`;
+    } else if (button.classList.contains('vidsrc-btn')) {
+        embedUrl = `https://parasgaming122.github.io/project-s/https://vidsrc.com/embed/imdb/${imdbId}`;
+    }
+}
 
             const iframe = document.createElement('iframe');
             iframe.src = embedUrl;
