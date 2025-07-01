@@ -137,9 +137,9 @@ const Player = () => {
     if (type === 'movie') {
       switch (selectedServer) {
         case 'superembed':
-          return `https://multiembed.mov/?video_id=${cleanImdbId}`
+          return `https://multiembed.mov/?video_id=${cleanImdbId}&tmdb=1`
         case 'superembed-vip':
-          return `https://multiembed.mov/directstream.php?video_id=${cleanImdbId}`
+          return `https://multiembed.mov/directstream.php?video_id=${cleanImdbId}&tmdb=1`
         case 'autoembed':
           return `https://autoembed.co/movie/imdb/${cleanImdbId}`
         case 'vidsrc':
@@ -150,9 +150,9 @@ const Player = () => {
     } else {
       switch (selectedServer) {
         case 'superembed':
-          return `https://multiembed.mov/?video_id=${cleanImdbId}&s=${currentSeason}&e=${currentEpisode}`
+          return `https://multiembed.mov/?video_id=${cleanImdbId}&tmdb=1&s=${currentSeason}&e=${currentEpisode}`
         case 'superembed-vip':
-          return `https://multiembed.mov/directstream.php?video_id=${cleanImdbId}&s=${currentSeason}&e=${currentEpisode}`
+          return `https://multiembed.mov/directstream.php?video_id=${cleanImdbId}&tmdb=1&s=${currentSeason}&e=${currentEpisode}`
         case 'autoembed':
           return `https://autoembed.co/tv/imdb/${cleanImdbId}-${currentSeason}-${currentEpisode}`
         case 'vidsrc':
