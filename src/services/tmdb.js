@@ -21,7 +21,7 @@ export const tmdbApi = {
     fetch(`${BASE_URL}/movie/upcoming?api_key=${API_KEY}&page=${page}`).then(res => res.json()),
   
   getMovieDetails: (id) =>
-    fetch(`${BASE_URL}/movie/${id}?api_key=${API_KEY}&append_to_response=credits,videos,similar,reviews`).then(res => res.json()),
+    fetch(`${BASE_URL}/movie/${id}?api_key=${API_KEY}&append_to_response=credits,videos,similar,reviews,external_ids`).then(res => res.json()),
   
   // TV Shows
   getPopularTVShows: (page = 1) =>
@@ -37,10 +37,17 @@ export const tmdbApi = {
     fetch(`${BASE_URL}/tv/airing_today?api_key=${API_KEY}&page=${page}`).then(res => res.json()),
   
   getTVDetails: (id) =>
-    fetch(`${BASE_URL}/tv/${id}?api_key=${API_KEY}&append_to_response=credits,videos,similar,reviews`).then(res => res.json()),
+    fetch(`${BASE_URL}/tv/${id}?api_key=${API_KEY}&append_to_response=credits,videos,similar,reviews,external_ids`).then(res => res.json()),
   
   getTVSeasonDetails: (id, seasonNumber) =>
     fetch(`${BASE_URL}/tv/${id}/season/${seasonNumber}?api_key=${API_KEY}`).then(res => res.json()),
+  
+  // External IDs
+  getMovieExternalIds: (id) =>
+    fetch(`${BASE_URL}/movie/${id}/external_ids?api_key=${API_KEY}`).then(res => res.json()),
+  
+  getTVExternalIds: (id) =>
+    fetch(`${BASE_URL}/tv/${id}/external_ids?api_key=${API_KEY}`).then(res => res.json()),
   
   // Search
   searchMulti: (query, page = 1) =>
@@ -78,7 +85,11 @@ export const tmdbApi = {
       ...params
     })
     return fetch(`${BASE_URL}/discover/tv?${queryParams}`).then(res => res.json())
-  }
+  },
+
+  // Find by external ID (IMDB)
+  findByImdbId: (imdbId) =>
+    fetch(`${BASE_URL}/find/${imdbId}?api_key=${API_KEY}&external_source=imdb_id`).then(res => res.json()),
 }
 
 // Image URL helpers

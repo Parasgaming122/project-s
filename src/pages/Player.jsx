@@ -14,11 +14,13 @@ const Player = () => {
   const [showControls, setShowControls] = useState(true)
   const [currentSeason, setCurrentSeason] = useState(season ? parseInt(season) : 1)
   const [currentEpisode, setCurrentEpisode] = useState(episode ? parseInt(episode) : 1)
+  const [imdbId, setImdbId] = useState(null)
 
   const servers = [
     { id: 'superembed', name: 'Superembed', priority: 1 },
-    { id: 'autoembed', name: 'Autoembed', priority: 2 },
-    { id: 'vidsrc', name: 'Vidsrc', priority: 3 }
+    { id: 'superembed-vip', name: 'Superembed VIP', priority: 2 },
+    { id: 'autoembed', name: 'Autoembed', priority: 3 },
+    { id: 'vidsrc', name: 'Vidsrc', priority: 4 }
   ]
 
   useEffect(() => {
@@ -30,6 +32,24 @@ const Player = () => {
           : await tmdbApi.getTVDetails(id)
         
         setMediaDetails(response)
+        
+        // Extract IMDB ID from external_ids
+        if (response.external_ids && response.external_ids.imdb_id) {
+          setImdbId(response.external_ids.imdb_id)
+        } else {
+          // Fallback: fetch external IDs separately
+          const externalIds = type === 'movie' 
+            ? await fetch(`https://api.themoviedb.org/3/movie/${id}/external_ids?api_key=a2f888b27315e62e471b2d587048f32e`)
+            : await fetch(`https://api.themoviedb.org/3/tv/${id}/external_ids?api_key=a2f888b27315e62e471b2d587048f32e`)
+          
+          const externalData = await externalIds.json()
+          if (externalData.imdb_id) {
+            setImdbId(externalData.imdb_id)
+          } else {
+            // Use TMDB ID as fallback
+            setImdbId(id)
+          }
+        }
         
         // Add to watch history
         const historyItem = {
@@ -43,6 +63,8 @@ const Player = () => {
         addToHistory(historyItem)
       } catch (error) {
         console.error('Error fetching media details:', error)
+        // Use TMDB ID as fallback
+        setImdbId(id)
       } finally {
         setLoading(false)
       }
@@ -106,33 +128,37 @@ const Player = () => {
   }, [isTV, type, currentSeason, currentEpisode, navigate])
 
   const getEmbedUrl = () => {
-    const baseUrls = {
-      superembed: 'https://multiembed.mov',
-      autoembed: 'https://autoembed.co',
-      vidsrc: 'https://vidsrc.xyz/embed'
-    }
+    if (!imdbId) return ''
+
+    // Clean IMDB ID (remove 'tt' prefix if present for some servers)
+    const cleanImdbId = imdbId.startsWith('tt') ? imdbId : `tt${imdbId}`
+    const numericImdbId = imdbId.replace('tt', '')
 
     if (type === 'movie') {
       switch (selectedServer) {
         case 'superembed':
-          return `${baseUrls.superembed}/?video_id=${id}`
+          return `https://multiembed.mov/?video_id=${cleanImdbId}`
+        case 'superembed-vip':
+          return `https://multiembed.mov/directstream.php?video_id=${cleanImdbId}`
         case 'autoembed':
-          return `${baseUrls.autoembed}/movie/imdb/${id}`
+          return `https://autoembed.co/movie/imdb/${cleanImdbId}`
         case 'vidsrc':
-          return `${baseUrls.vidsrc}/movie?imdb=${id}`
+          return `https://vidsrc.xyz/embed/movie?imdb=${cleanImdbId}`
         default:
-          return `${baseUrls.superembed}/?video_id=${id}`
+          return `https://multiembed.mov/?video_id=${cleanImdbId}`
       }
     } else {
       switch (selectedServer) {
         case 'superembed':
-          return `${baseUrls.superembed}/?video_id=${id}&s=${currentSeason}&e=${currentEpisode}`
+          return `https://multiembed.mov/?video_id=${cleanImdbId}&s=${currentSeason}&e=${currentEpisode}`
+        case 'superembed-vip':
+          return `https://multiembed.mov/directstream.php?video_id=${cleanImdbId}&s=${currentSeason}&e=${currentEpisode}`
         case 'autoembed':
-          return `${baseUrls.autoembed}/tv/imdb/${id}-${currentSeason}-${currentEpisode}`
+          return `https://autoembed.co/tv/imdb/${cleanImdbId}-${currentSeason}-${currentEpisode}`
         case 'vidsrc':
-          return `${baseUrls.vidsrc}/tv?imdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          return `https://vidsrc.xyz/embed/tv?imdb=${cleanImdbId}&season=${currentSeason}&episode=${currentEpisode}`
         default:
-          return `${baseUrls.superembed}/?video_id=${id}&s=${currentSeason}&e=${currentEpisode}`
+          return `https://multiembed.mov/?video_id=${cleanImdbId}&s=${currentSeason}&e=${currentEpisode}`
       }
     }
   }
@@ -151,13 +177,23 @@ const Player = () => {
     <div className="min-h-screen bg-black relative">
       {/* Video Player */}
       <div className="relative w-full h-screen">
-        <iframe
-          src={getEmbedUrl()}
-          className="w-full h-full"
-          frameBorder="0"
-          allowFullScreen
-          allow="autoplay; encrypted-media"
-        />
+        {imdbId ? (
+          <iframe
+            src={getEmbedUrl()}
+            className="w-full h-full"
+            frameBorder="0"
+            allowFullScreen
+            allow="autoplay; encrypted-media; picture-in-picture"
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-dark-800">
+            <div className="text-center text-white">
+              <h2 className="text-2xl mb-4">Unable to load player</h2>
+              <p className="text-dark-400">IMDB ID not found for this content</p>
+            </div>
+          </div>
+        )}
 
         {/* Controls Overlay */}
         <div className={`absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/60 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'} pointer-events-none`}>
@@ -165,7 +201,7 @@ const Player = () => {
           <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between pointer-events-auto">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center space-x-2 text-white hover:text-accent-400 transition-colors"
+              className="flex items-center space-x-2 text-white hover:text-accent-400 transition-colors bg-black/50 px-4 py-2 rounded-lg backdrop-blur-sm"
             >
               <ArrowLeft className="w-6 h-6" />
               <span className="hidden md:inline">Back</span>
@@ -176,6 +212,9 @@ const Player = () => {
                 {title}
                 {type === 'tv' && ` - S${currentSeason}E${currentEpisode}`}
               </h1>
+              {imdbId && (
+                <p className="text-sm text-dark-300 mt-1">IMDB: {imdbId}</p>
+              )}
             </div>
 
             <div className="flex items-center space-x-4">
@@ -183,7 +222,7 @@ const Player = () => {
               <select
                 value={selectedServer}
                 onChange={(e) => setSelectedServer(e.target.value)}
-                className="bg-black/50 text-white px-3 py-2 rounded border border-white/20 focus:outline-none focus:border-accent-500"
+                className="bg-black/50 text-white px-3 py-2 rounded border border-white/20 focus:outline-none focus:border-accent-500 backdrop-blur-sm"
               >
                 {servers.map((server) => (
                   <option key={server.id} value={server.id}>
@@ -192,7 +231,7 @@ const Player = () => {
                 ))}
               </select>
 
-              <button className="text-white hover:text-accent-400 transition-colors">
+              <button className="text-white hover:text-accent-400 transition-colors bg-black/50 p-2 rounded backdrop-blur-sm">
                 <Settings className="w-6 h-6" />
               </button>
             </div>
@@ -204,19 +243,19 @@ const Player = () => {
               <button
                 onClick={() => currentEpisode > 1 && setCurrentEpisode(prev => prev - 1)}
                 disabled={currentEpisode <= 1}
-                className="flex items-center space-x-2 bg-black/50 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/70 transition-colors"
+                className="flex items-center space-x-2 bg-black/50 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/70 transition-colors backdrop-blur-sm"
               >
                 <SkipBack className="w-5 h-5" />
                 <span className="hidden md:inline">Previous</span>
               </button>
 
-              <div className="flex items-center space-x-2 bg-black/50 text-white px-4 py-2 rounded">
+              <div className="flex items-center space-x-2 bg-black/50 text-white px-4 py-2 rounded backdrop-blur-sm">
                 <span>S{currentSeason}E{currentEpisode}</span>
               </div>
 
               <button
                 onClick={() => setCurrentEpisode(prev => prev + 1)}
-                className="flex items-center space-x-2 bg-black/50 text-white px-4 py-2 rounded hover:bg-black/70 transition-colors"
+                className="flex items-center space-x-2 bg-black/50 text-white px-4 py-2 rounded hover:bg-black/70 transition-colors backdrop-blur-sm"
               >
                 <span className="hidden md:inline">Next</span>
                 <SkipForward className="w-5 h-5" />
@@ -233,7 +272,7 @@ const Player = () => {
                   setCurrentSeason(parseInt(e.target.value))
                   setCurrentEpisode(1)
                 }}
-                className="bg-black/50 text-white px-3 py-2 rounded border border-white/20 focus:outline-none focus:border-accent-500"
+                className="bg-black/50 text-white px-3 py-2 rounded border border-white/20 focus:outline-none focus:border-accent-500 backdrop-blur-sm"
               >
                 {mediaDetails.seasons.filter(s => s.season_number > 0).map((season) => (
                   <option key={season.id} value={season.season_number}>
@@ -247,7 +286,7 @@ const Player = () => {
                 min="1"
                 value={currentEpisode}
                 onChange={(e) => setCurrentEpisode(parseInt(e.target.value) || 1)}
-                className="bg-black/50 text-white px-3 py-2 rounded border border-white/20 focus:outline-none focus:border-accent-500 w-20"
+                className="bg-black/50 text-white px-3 py-2 rounded border border-white/20 focus:outline-none focus:border-accent-500 w-20 backdrop-blur-sm"
                 placeholder="Ep"
               />
             </div>
@@ -257,13 +296,21 @@ const Player = () => {
 
       {/* TV Instructions */}
       {isTV && (
-        <div className="absolute top-4 left-4 bg-black/70 text-white p-3 rounded text-sm">
-          <p>TV Controls:</p>
+        <div className="absolute top-4 left-4 bg-black/70 text-white p-3 rounded text-sm backdrop-blur-sm">
+          <p className="font-semibold mb-2">TV Controls:</p>
           <p>← → Navigate episodes</p>
           <p>↑ ↓ Navigate seasons</p>
           <p>Back/Escape: Exit player</p>
         </div>
       )}
+
+      {/* Server Info */}
+      <div className="absolute bottom-4 left-4 bg-black/70 text-white p-3 rounded text-sm backdrop-blur-sm">
+        <p className="font-semibold">Current Server: {servers.find(s => s.id === selectedServer)?.name}</p>
+        {selectedServer === 'superembed-vip' && (
+          <p className="text-xs text-green-400 mt-1">VIP: Multi-quality, fast streaming</p>
+        )}
+      </div>
     </div>
   )
 }
